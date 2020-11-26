@@ -281,25 +281,36 @@ def print_run_result_error(
             color = ui.red
             info = 'Failure'
             logger_fn = logger.error
-        logger_fn(color("{} in {} {} ({})").format(
+
+        messages = [color("{} in {} {} ({})").format(
             info,
             result.node.resource_type,
             result.node.name,
-            result.node.original_file_path))
+            result.node.original_file_path
+        )]
+
+        extra = {
+            'info': info,
+            'name': result.node.name,
+            'file_path': result.node.original_file_path,
+            'resource_type': result.node.resource_type,
+        }
 
         try:
             int(result.status)
         except ValueError:
-            logger.error("  Status: {}".format(result.status))
+            logger_fn = logger.error
+            messages.append("  Status: {}".format(result.status))
         else:
             status = utils.pluralize(result.status, 'result')
-            logger.error("  Got {}, expected 0.".format(status))
+            messages.append("  Got {}, expected 0.".format(status))
 
         if result.node.build_path is not None:
-            with TextOnly():
-                logger.info("")
-            logger.info("  compiled SQL at {}".format(
+            extra["build_path"] = result.node.build_path
+            messages.append("  compiled SQL at {}".format(
                 result.node.build_path))
+
+        logger_fn("\n".join(messages), extra=extra)
 
     else:
         first = True
